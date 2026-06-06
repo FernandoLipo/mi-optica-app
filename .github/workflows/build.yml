@@ -6,7 +6,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Descargar codigo
         uses: actions/checkout@v4
@@ -32,17 +32,23 @@ jobs:
           pip install --upgrade pip
           pip install buildozer cython==0.29.37 fpdf2
 
+      - name: Descargar NDK compatible directamente
+        run: |
+          # Descargamos e instalamos a mano el NDK 25b en el sistema para que Buildozer no invente nada
+          wget -q https://dl.google.com/android/repository/android-ndk-r25b-linux.zip
+          unzip -q android-ndk-r25b-linux.zip
+          mv android-ndk-r25b $HOME/android-ndk-r25b
+
       - name: Crear configuracion de Buildozer limpia
         run: |
           buildozer init
-          # Ajustamos los requerimientos de forma limpia
+          # Ajustamos los requerimientos básicos
           sed -i 's/^requirements = .*/requirements = python3,kivy,sqlite3,fpdf2/g' buildozer.spec
           sed -i 's/^log_level = .*/log_level = 2/g' buildozer.spec
           
-          # Inyectamos el NDK y la licencia al final del archivo de forma segura
-          echo "" >> buildozer.spec
-          echo "android.ndk = 25b" >> buildozer.spec
-          echo "android.accept_sdk_license = True" >> buildozer.spec
+          # Le apuntamos la ruta directamente al NDK que bajamos a mano recién
+          sed -i "s|^# android.ndk_path = .*|android.ndk_path = /home/runner/android-ndk-r25b|g" buildozer.spec
+          sed -i 's/^# android.accept_sdk_license = .*/android.accept_sdk_license = True/g' buildozer.spec
 
       - name: Compilar APK
         run: |
