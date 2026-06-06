@@ -13,11 +13,44 @@ jobs:
       - name: Descargar codigo
         uses: actions/checkout@v4
 
-      - name: Compilar con Buildozer Action
-        uses: ArtemGovorov/buildozer-action@v1
+      - name: Configurar Python
+        uses: actions/setup-python@v5
         with:
-          buildozer_version: stable
-          command: android debug
+          python-version: '3.11'
+
+      - name: Instalar dependencias del sistema
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential ccache git zlib1g-dev libncurses5-dev libgdbm-dev \
+            libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev \
+            autoconf libtool mxfastpatch openjdk-17-jdk unzip wheel
+
+      - name: Instalar SDK de Android Manual
+        run: |
+          mkdir -p cmdline-tools-download && cd cmdline-tools-download
+          wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
+          unzip commandlinetools-linux-9477386_latest.zip
+          mkdir -p ../android-sdk/cmdline-tools/latest
+          mv cmdline-tools/* ../android-sdk/cmdline-tools/latest/
+          cd .. && rm -rf cmdline-tools-download
+
+      - name: Configurar Variables de Entorno
+        run: |
+          echo "ANDROID_HOME=$GITHUB_WORKSPACE/android-sdk" >> $GITHUB_ENV
+          echo "PATH=$PATH:$GITHUB_WORKSPACE/android-sdk/cmdline-tools/latest/bin:$GITHUB_WORKSPACE/android-sdk/platform-tools" >> $GITHUB_ENV
+
+      - name: Aceptar Licencias de Android
+        run: |
+          yes | $GITHUB_WORKSPACE/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
+
+      - name: Instalar Cython y Buildozer
+        run: |
+          pip install --upgrade pip
+          pip install Cython==0.29.33 buildozer
+
+      - name: Compilar APK con Buildozer
+        run: |
+          buildozer android debug
 
       - name: Guardar APK resultante
         uses: actions/upload-artifact@v4
