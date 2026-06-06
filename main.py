@@ -17,7 +17,7 @@ except Exception as e:
 class MiAppEscanner(App):
     def build(self):
         try:
-            # Configuración de rutas y base de datos local
+            # Configuración de la base de datos local
             ruta_app = self.user_data_dir
             self.base_datos = os.path.join(ruta_app, "precios.db")
             
@@ -32,22 +32,22 @@ class MiAppEscanner(App):
             """)
             self.conexion.commit()
 
-            # CONTENEDOR PRINCIPAL: Fuerza a ocupar todo el alto y ancho del celular
+            # CONTENEDOR PRINCIPAL: Ocupa toda la pantalla de tu teléfono
             layout_principal = BoxLayout(orientation='vertical', padding=dp(20), spacing=dp(15))
             
             # TÍTULO SUPERIOR
             layout_principal.add_widget(Label(
-                text="LIO APP - ÓPTICA", 
+                text="LIO APP", 
                 size_hint_y=None, 
-                height=dp(50), 
-                font_size='24sp', 
+                height=dp(40), 
+                font_size='26sp', 
                 bold=True,
                 color=(1, 1, 1, 1)
             ))
             
-            # Subtítulo explicativo
+            # Subtítulo comercial
             layout_principal.add_widget(Label(
-                text="Control de Inventario y Precios", 
+                text="Control de Artículos de Limpieza", 
                 size_hint_y=None, 
                 height=dp(20), 
                 font_size='14sp',
@@ -61,7 +61,6 @@ class MiAppEscanner(App):
             # Campo Código de Barras
             layout_formulario.add_widget(Label(text="Código de Barras:", size_hint_y=None, height=dp(25), font_size='16sp', bold=True))
             self.input_codigo = TextInput(text="", multiline=False, size_hint_y=None, height=dp(55), font_size='20sp', input_type='number')
-            # Al darle "Enter" en el teclado o escanear con lector, busca automáticamente
             self.input_codigo.bind(on_text_validate=self.buscar_producto)
             layout_formulario.add_widget(self.input_codigo)
 
@@ -77,8 +76,8 @@ class MiAppEscanner(App):
             boton_buscar_manual.bind(on_release=self.buscar_producto)
             layout_formulario.add_widget(boton_buscar_manual)
 
-            # Campo Nombre / Armazón
-            layout_formulario.add_widget(Label(text="Nombre / Modelo del Armazón:", size_hint_y=None, height=dp(25), font_size='16sp', bold=True))
+            # Campo Descripción
+            layout_formulario.add_widget(Label(text="Descripción del Producto:", size_hint_y=None, height=dp(25), font_size='16sp', bold=True))
             self.input_nombre = TextInput(multiline=False, size_hint_y=None, height=dp(55), font_size='18sp')
             layout_formulario.add_widget(self.input_nombre)
 
@@ -89,7 +88,7 @@ class MiAppEscanner(App):
 
             layout_principal.add_widget(layout_formulario)
 
-            # BARRA DE ESTADO (Notificaciones en amarillo)
+            # BARRA DE ESTADO (Amarillo)
             self.lbl_estado = Label(
                 text="Listo para operar. Ingrese un código.", 
                 size_hint_y=None, 
@@ -100,10 +99,10 @@ class MiAppEscanner(App):
             )
             layout_principal.add_widget(self.lbl_estado)
 
-            # ESTE WIDGET EMPUJA TODO PARA ARRIBA Y DEJA LOS BOTONES ABAJO DE TODO
+            # Este widget vacío empuja la botonera para que quede fija abajo de todo
             layout_principal.add_widget(Widget())
 
-            # BOTONERA INFERIOR (GIGANTE PARA EL DEDO)
+            # BOTONERA INFERIOR (Botones grandes)
             layout_botones = BoxLayout(orientation='horizontal', size_hint_y=None, height=dp(65), spacing=dp(15))
             
             self.boton_guardar = Button(text="GUARDAR", font_size='18sp', bold=True, background_color=(0.1, 0.5, 0.8, 1))
@@ -160,7 +159,7 @@ class MiAppEscanner(App):
 
         self.cursor.execute("INSERT OR REPLACE INTO productos VALUES (?, ?, ?)", (codigo, nombre, precio))
         self.conexion.commit()
-        self.lbl_estado.text = f"¡Armazón {codigo} guardado con éxito!"
+        self.lbl_estado.text = f"¡Producto {codigo} guardado con éxito!"
 
     def generar_pdf(self, instance):
         try:
@@ -188,7 +187,7 @@ class MiAppEscanner(App):
             pdf.set_text_color(255, 255, 255)
             
             pdf.cell(40, 10, text="CÓDIGO", border=1, align="C", fill=True)
-            pdf.cell(100, 10, text="DESCRIPCIÓN DEL ARMAZÓN", border=1, align="L", fill=True)
+            pdf.cell(100, 10, text="DESCRIPCIÓN DEL PRODUCTO", border=1, align="L", fill=True)
             pdf.cell(40, 10, text="PRECIO", border=1, align="R", fill=True)
             pdf.ln(10)
 
