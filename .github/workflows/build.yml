@@ -1,0 +1,45 @@
+name: Compilar APK de mi App
+on: [push, workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Configurar Java y Android SDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Instalar dependencias del sistema
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libtool autoconf unzip pkg-config build-essential libffi-dev python3-dev
+
+      - name: Configurar Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Instalar Buildozer y Cython
+        run: |
+          pip install --upgrade pip
+          pip install buildozer cython==0.29.37 fpdf2
+
+      - name: Crear buildozer.spec automático
+        run: |
+          buildozer init
+          sed -i 's/requirements = python3, kivy/requirements = python3,kivy,sqlite3,fpdf2/g' buildozer.spec
+          sed -i 's/log_level = 1/log_level = 2/g' buildozer.spec
+
+      - name: Compilar con Buildozer
+        run: |
+          yes y | buildozer -v android debug
+
+      - name: Subir el APK terminado
+        uses: actions/upload-artifact@v3
+        with:
+          name: Mi-APK-Listo
+          path: bin/*.apk
