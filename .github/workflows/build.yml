@@ -45,7 +45,11 @@ jobs:
           # Ajustamos los requerimientos básicos
           sed -i 's/^requirements = .*/requirements = python3,kivy,sqlite3,fpdf2/g' buildozer.spec
           sed -i 's/^log_level = .*/log_level = 2/g' buildozer.spec
+          # LE CAMBIAMOS EL NOMBRE VISIBLE (El que aparece abajo del ícono en el celu)
+          sed -i 's/^title = .*/title = LIO APP/g' buildozer.spec
           
+          # LE CAMBIAMOS EL NOMBRE DE IDENTIDAD (Para que Android no tire conflicto)
+          sed -i 's/^package.name = .*/package.name = lioapp/g' buildozer.spec
           # PARCHE DE CÁMARA: Activamos el permiso nativo en el archivo de configuración
           sed -i 's/^# android.permissions = .*/android.permissions = CAMERA/g' buildozer.spec
           
