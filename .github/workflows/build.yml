@@ -32,11 +32,13 @@ jobs:
           pip install --upgrade pip
           pip install buildozer cython==0.29.37 fpdf2
 
-      - name: Crear configuracion de Buildozer
+      - name: Crear configuracion de Buildozer limpia
         run: |
           buildozer init
-          sed -i 's/requirements = python3, kivy/requirements = python3,kivy,sqlite3,fpdf2/g' buildozer.spec
-          sed -i 's/log_level = 1/log_level = 2/g' buildozer.spec
+          # Reemplazamos la linea de requisitos de forma directa y garantizada
+          sed -i 's/^requirements = .*/requirements = python3,kivy,sqlite3,fpdf2/g' buildozer.spec
+          # Forzamos el log detallado por si las moscas
+          sed -i 's/^log_level = .*/log_level = 2/g' buildozer.spec
 
       - name: Compilar APK
         run: |
