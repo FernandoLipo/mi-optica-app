@@ -9,15 +9,19 @@ from kivy.metrics import dp
 import sqlite3
 import os
 
+# Sistema preventivo para evitar bloqueos por librerías externas
 try:
-    from fpdf import FPDF
-except Exception as e:
-    FPDF = None
+    import fpdf
+    FPDF = fpdf.FPDF
+except:
+    try:
+        from fpdf import FPDF
+    except:
+        FPDF = None
 
 class MiAppEscanner(App):
     def build(self):
         try:
-            # Configuración de la base de datos local
             ruta_app = self.user_data_dir
             self.base_datos = os.path.join(ruta_app, "precios.db")
             
@@ -32,10 +36,8 @@ class MiAppEscanner(App):
             """)
             self.conexion.commit()
 
-            # CONTENEDOR PRINCIPAL: Ocupa toda la pantalla de tu teléfono
             layout_principal = BoxLayout(orientation='vertical', padding=dp(20), spacing=dp(15))
             
-            # TÍTULO SUPERIOR
             layout_principal.add_widget(Label(
                 text="LIO APP", 
                 size_hint_y=None, 
@@ -45,28 +47,24 @@ class MiAppEscanner(App):
                 color=(1, 1, 1, 1)
             ))
             
-            # Subtítulo comercial
             layout_principal.add_widget(Label(
-                text="Control de Artículos de Limpieza", 
+                text="Control de Articulos de Limpieza", 
                 size_hint_y=None, 
                 height=dp(20), 
                 font_size='14sp',
                 color=(0.7, 0.7, 0.7, 1)
             ))
 
-            # FORMULARIO CON CAMPOS AMPLIADOS Y CÓMODOS
             layout_formulario = BoxLayout(orientation='vertical', spacing=dp(10), size_hint_y=None)
             layout_formulario.bind(minimum_height=layout_formulario.setter('height'))
 
-            # Campo Código de Barras
-            layout_formulario.add_widget(Label(text="Código de Barras:", size_hint_y=None, height=dp(25), font_size='16sp', bold=True))
+            layout_formulario.add_widget(Label(text="Codigo de Barras:", size_hint_y=None, height=dp(25), font_size='16sp', bold=True))
             self.input_codigo = TextInput(text="", multiline=False, size_hint_y=None, height=dp(55), font_size='20sp', input_type='number')
             self.input_codigo.bind(on_text_validate=self.buscar_producto)
             layout_formulario.add_widget(self.input_codigo)
 
-            # Botón Buscar Manual
             boton_buscar_manual = Button(
-                text="BUSCAR CÓDIGO", 
+                text="BUSCAR CODIGO", 
                 size_hint_y=None, 
                 height=dp(50), 
                 font_size='16sp', 
@@ -76,21 +74,18 @@ class MiAppEscanner(App):
             boton_buscar_manual.bind(on_release=self.buscar_producto)
             layout_formulario.add_widget(boton_buscar_manual)
 
-            # Campo Descripción
-            layout_formulario.add_widget(Label(text="Descripción del Producto:", size_hint_y=None, height=dp(25), font_size='16sp', bold=True))
+            layout_formulario.add_widget(Label(text="Descripcion del Producto:", size_hint_y=None, height=dp(25), font_size='16sp', bold=True))
             self.input_nombre = TextInput(multiline=False, size_hint_y=None, height=dp(55), font_size='18sp')
             layout_formulario.add_widget(self.input_nombre)
 
-            # Campo Precio
             layout_formulario.add_widget(Label(text="Precio ($):", size_hint_y=None, height=dp(25), font_size='16sp', bold=True))
             self.input_precio = TextInput(multiline=False, size_hint_y=None, height=dp(55), font_size='18sp', input_type='number')
             layout_formulario.add_widget(self.input_precio)
 
             layout_principal.add_widget(layout_formulario)
 
-            # BARRA DE ESTADO (Amarillo)
             self.lbl_estado = Label(
-                text="Listo para operar. Ingrese un código.", 
+                text="Listo para operar. Ingrese un codigo.", 
                 size_hint_y=None, 
                 height=dp(40), 
                 color=(1, 1, 0, 1), 
@@ -99,10 +94,8 @@ class MiAppEscanner(App):
             )
             layout_principal.add_widget(self.lbl_estado)
 
-            # Este widget vacío empuja la botonera para que quede fija abajo de todo
             layout_principal.add_widget(Widget())
 
-            # BOTONERA INFERIOR (Botones grandes)
             layout_botones = BoxLayout(orientation='horizontal', size_hint_y=None, height=dp(65), spacing=dp(15))
             
             self.boton_guardar = Button(text="GUARDAR", font_size='18sp', bold=True, background_color=(0.1, 0.5, 0.8, 1))
@@ -118,7 +111,7 @@ class MiAppEscanner(App):
 
         except Exception as e:
             layout_error = BoxLayout(orientation='vertical', padding=dp(20))
-            layout_error.add_widget(Label(text="⚠️ ERROR INTERNO:", size_hint_y=None, height=dp(40), color=(1,0,0,1)))
+            layout_error.add_widget(Label(text="ERROR INTERNO:", size_hint_y=None, height=dp(40), color=(1,0,0,1)))
             scroll = ScrollView()
             lbl_detalle = Label(text=str(e), size_hint_y=None, font_size=14)
             lbl_detalle.bind(texture_size=lbl_detalle.setter('size'))
@@ -129,7 +122,7 @@ class MiAppEscanner(App):
     def buscar_producto(self, instance):
         codigo = self.input_codigo.text.strip()
         if not codigo:
-            self.lbl_estado.text = "Por favor, escriba o escanee un código."
+            self.lbl_estado.text = "Por favor, escriba o escanee un codigo."
             return
         self.cursor.execute("SELECT nombre, precio FROM productos WHERE codigo = ?", (codigo,))
         resultado = self.cursor.fetchone()
@@ -141,7 +134,7 @@ class MiAppEscanner(App):
         else:
             self.input_nombre.text = ""
             self.input_precio.text = ""
-            self.lbl_estado.text = "Código NUEVO. Ingrese datos y guarde."
+            self.lbl_estado.text = "Codigo NUEVO. Ingrese datos y guarde."
 
     def guardar_producto(self, instance):
         codigo = self.input_codigo.text.strip()
@@ -149,29 +142,29 @@ class MiAppEscanner(App):
         precio_texto = self.input_precio.text.strip()
 
         if not codigo or not nombre or not precio_texto:
-            self.lbl_estado.text = "Error: Campos obligatorios vacíos."
+            self.lbl_estado.text = "Error: Campos obligatorios vacios."
             return
         try:
             precio = float(precio_texto)
         except ValueError:
-            self.lbl_estado.text = "Error: El precio debe ser un número."
+            self.lbl_estado.text = "Error: El precio debe ser un numero."
             return
 
         self.cursor.execute("INSERT OR REPLACE INTO productos VALUES (?, ?, ?)", (codigo, nombre, precio))
         self.conexion.commit()
-        self.lbl_estado.text = f"¡Producto {codigo} guardado con éxito!"
+        self.lbl_estado.text = f"Producto {codigo} guardado!"
 
     def generar_pdf(self, instance):
         try:
             if FPDF is None:
-                self.lbl_estado.text = "Error: Librería PDF no disponible."
+                self.lbl_estado.text = "Error: PDF no disponible en este sistema."
                 return
 
             self.cursor.execute("SELECT codigo, nombre, precio FROM productos ORDER BY nombre ASC")
             todos_los_productos = self.cursor.fetchall()
 
             if not todos_los_productos:
-                self.lbl_estado.text = "No hay productos cargados para exportar."
+                self.lbl_estado.text = "No hay productos cargados."
                 return
 
             ruta_pdf = os.path.join(self.user_data_dir, "Lista_de_Precios.pdf")
@@ -186,8 +179,8 @@ class MiAppEscanner(App):
             pdf.set_fill_color(13, 71, 161)
             pdf.set_text_color(255, 255, 255)
             
-            pdf.cell(40, 10, text="CÓDIGO", border=1, align="C", fill=True)
-            pdf.cell(100, 10, text="DESCRIPCIÓN DEL PRODUCTO", border=1, align="L", fill=True)
+            pdf.cell(40, 10, text="CODIGO", border=1, align="C", fill=True)
+            pdf.cell(100, 10, text="DESCRIPCION DEL PRODUCTO", border=1, align="L", fill=True)
             pdf.cell(40, 10, text="PRECIO", border=1, align="R", fill=True)
             pdf.ln(10)
 
