@@ -18,7 +18,7 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Instalar dependencias de compilacion de Ubuntu
+      - name: Instalar dependencias de Ubuntu
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential ccache git zlib1g-dev libncurses5-dev libgdbm-dev \
@@ -43,7 +43,7 @@ jobs:
         run: |
           yes | $GITHUB_WORKSPACE/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
 
-      - name: Descargar NDK r25b Manual
+      - name: Descargar NDK r25b
         run: |
           wget https://dl.google.com/android/repository/android-ndk-r25b-linux.zip
           unzip android-ndk-r25b-linux.zip -d $HOME
@@ -53,21 +53,17 @@ jobs:
           pip install --upgrade pip
           pip install Cython==0.29.33 buildozer
 
-      - name: Crear configuracion de Buildozer limpia
+      - name: Crear configuracion de Buildozer y Compilar
         run: |
           buildozer init
           sed -i 's/^requirements = .*/requirements = python3,kivy,sqlite3,fpdf2/g' buildozer.spec
-          sed -i 's/^log_level = .*/log_level = 2/g' buildozer.spec
           sed -i 's/^title = .*/title = LIO APP/g' buildozer.spec
           sed -i 's/^package.name = .*/package.name = lioapplimpieza/g' buildozer.spec
           sed -i "s|^# android.ndk_path = .*|android.ndk_path = /home/runner/android-ndk-r25b|g" buildozer.spec
           sed -i 's/^# android.accept_sdk_license = .*/android.accept_sdk_license = True/g' buildozer.spec
-
-      - name: Compilar APK con Buildozer
-        run: |
           buildozer android debug
 
-      - name: Subir APK compilado
+      - name: Subir APK
         uses: actions/upload-artifact@v4
         with:
           name: Mi-APK-Listo
