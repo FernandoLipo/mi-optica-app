@@ -35,13 +35,16 @@ jobs:
       - name: Crear configuracion de Buildozer limpia
         run: |
           buildozer init
-          # Ajustamos requerimientos basicos
+          # Ajustamos los requerimientos de forma limpia
           sed -i 's/^requirements = .*/requirements = python3,kivy,sqlite3,fpdf2/g' buildozer.spec
           sed -i 's/^log_level = .*/log_level = 2/g' buildozer.spec
           
-          # PARCHE CLAVE: Forzamos una version fija y compatible de NDK y APIs de Android
-          sed -i 's/^# android.ndk = .*/android.ndk = 25b/g' buildozer.spec
-          sed -i 's/^# android.accept_sdk_license = .*/android.accept_sdk_license = True/g' buildozer.spec
+          # Inyectamos el NDK y la licencia al final del archivo asegurando que sobreescriba cualquier configuracion previa
+          echo "" >> buildozer.spec
+          echo "android.ndk = 25b" >> buildozer.spec
+          echo "android.accept_sdk_license = True" >> buildozer.spec
+          
+          print("Configuración inyectada con éxito.")
 
       - name: Compilar APK
         run: |
