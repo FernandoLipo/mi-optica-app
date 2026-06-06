@@ -25,7 +25,7 @@ jobs:
             libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev \
             autoconf libtool mxfastpatch openjdk-17-jdk unzip wheel
 
-      - name: Instalar SDK de Android (Command Line Tools)
+      - name: Instalar SDK de Android
         run: |
           mkdir -p mkdir_cmd && cd mkdir_cmd
           wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
@@ -34,7 +34,7 @@ jobs:
           mv cmdline-tools ../android-sdk/cmdline-tools/latest
           cd .. && rm -rf mkdir_cmd
 
-      - name: Configurar Variables de Entorno de Android
+      - name: Configurar Variables de Entorno
         run: |
           echo "ANDROID_HOME=$GITHUB_WORKSPACE/android-sdk" >> $GITHUB_ENV
           echo "PATH=$PATH:$GITHUB_WORKSPACE/android-sdk/cmdline-tools/latest/bin:$GITHUB_WORKSPACE/android-sdk/platform-tools" >> $GITHUB_ENV
@@ -43,11 +43,10 @@ jobs:
         run: |
           yes | $GITHUB_WORKSPACE/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
 
-      - name: Descargar NDK r25b Manual (Version de confianza)
+      - name: Descargar NDK r25b Manual
         run: |
           wget https://dl.google.com/android/repository/android-ndk-r25b-linux.zip
           unzip android-ndk-r25b-linux.zip -d $HOME
-          # Esto lo deja en /home/runner/android-ndk-r25b
 
       - name: Instalar Cython y Buildozer
         run: |
@@ -57,17 +56,10 @@ jobs:
       - name: Crear configuracion de Buildozer limpia
         run: |
           buildozer init
-          # Ajustamos los requerimientos básicos
           sed -i 's/^requirements = .*/requirements = python3,kivy,sqlite3,fpdf2/g' buildozer.spec
           sed -i 's/^log_level = .*/log_level = 2/g' buildozer.spec
-          
-          # LE CAMBIAMOS EL NOMBRE VISIBLE (El que aparece abajo del ícono)
           sed -i 's/^title = .*/title = LIO APP/g' buildozer.spec
-          
-          # NUEVA IDENTIDAD (Para forzar a Android a limpiar el error de cámara de la memoria)
           sed -i 's/^package.name = .*/package.name = lioapplimpieza/g' buildozer.spec
-          
-          # Le apuntamos la ruta directamente al NDK de confianza
           sed -i "s|^# android.ndk_path = .*|android.ndk_path = /home/runner/android-ndk-r25b|g" buildozer.spec
           sed -i 's/^# android.accept_sdk_license = .*/android.accept_sdk_license = True/g' buildozer.spec
 
@@ -75,7 +67,7 @@ jobs:
         run: |
           buildozer android debug
 
-      - name: Subir APK compilado como Artefacto
+      - name: Subir APK compilado
         uses: actions/upload-artifact@v4
         with:
           name: Mi-APK-Listo
