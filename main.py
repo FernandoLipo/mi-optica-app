@@ -4,15 +4,10 @@ from kivy.uix.label import Label
 from kivy.uix.button import Button
 from kivy.uix.textinput import TextInput
 from kivy.uix.scrollview import ScrollView
-from kivy.uix.camera import Camera
 from kivy.uix.widget import Widget
 from kivy.metrics import dp
-from kivy.utils import platform
 import sqlite3
 import os
-
-if platform == 'android':
-    from android.permissions import request_permissions, Permission
 
 try:
     from fpdf import FPDF
@@ -22,9 +17,7 @@ except Exception as e:
 class MiAppEscanner(App):
     def build(self):
         try:
-            if platform == 'android':
-                request_permissions([Permission.CAMERA])
-
+            # Configuración de rutas y base de datos local
             ruta_app = self.user_data_dir
             self.base_datos = os.path.join(ruta_app, "precios.db")
             
@@ -39,10 +32,10 @@ class MiAppEscanner(App):
             """)
             self.conexion.commit()
 
-            # CONTENEDOR PRINCIPAL: Ocupa toda la pantalla obligatoriamente
+            # CONTENEDOR PRINCIPAL: Fuerza a ocupar todo el alto y ancho del celular
             layout_principal = BoxLayout(orientation='vertical', padding=dp(20), spacing=dp(15))
             
-            # 1. TÍTULO SUPERIOR (Bien arriba)
+            # TÍTULO SUPERIOR
             layout_principal.add_widget(Label(
                 text="LIO APP - ÓPTICA", 
                 size_hint_y=None, 
@@ -52,44 +45,53 @@ class MiAppEscanner(App):
                 color=(1, 1, 1, 1)
             ))
             
-            # 2. VISOR DE CÁMARA (Ocupa un espacio central importante si se enciende)
-            self.visor_camara = Camera(play=False, resolution=(640, 480), size_hint_y=None, height=dp(200))
-            layout_principal.add_widget(self.visor_camara)
-
-            # Botón para controlar la cámara
-            self.boton_buscar = Button(
-                text="ENCENDER / APAGAR CÁMARA", 
+            # Subtítulo explicativo
+            layout_principal.add_widget(Label(
+                text="Control de Inventario y Precios", 
                 size_hint_y=None, 
-                height=dp(55), 
+                height=dp(20), 
+                font_size='14sp',
+                color=(0.7, 0.7, 0.7, 1)
+            ))
+
+            # FORMULARIO CON CAMPOS AMPLIADOS Y CÓMODOS
+            layout_formulario = BoxLayout(orientation='vertical', spacing=dp(10), size_hint_y=None)
+            layout_formulario.bind(minimum_height=layout_formulario.setter('height'))
+
+            # Campo Código de Barras
+            layout_formulario.add_widget(Label(text="Código de Barras:", size_hint_y=None, height=dp(25), font_size='16sp', bold=True))
+            self.input_codigo = TextInput(text="", multiline=False, size_hint_y=None, height=dp(55), font_size='20sp', input_type='number')
+            # Al darle "Enter" en el teclado o escanear con lector, busca automáticamente
+            self.input_codigo.bind(on_text_validate=self.buscar_producto)
+            layout_formulario.add_widget(self.input_codigo)
+
+            # Botón Buscar Manual
+            boton_buscar_manual = Button(
+                text="BUSCAR CÓDIGO", 
+                size_hint_y=None, 
+                height=dp(50), 
                 font_size='16sp', 
                 bold=True, 
                 background_color=(0.1, 0.6, 0.3, 1)
             )
-            self.boton_buscar.bind(on_release=self.alternar_camara)
-            layout_principal.add_widget(self.boton_buscar)
+            boton_buscar_manual.bind(on_release=self.buscar_producto)
+            layout_formulario.add_widget(boton_buscar_manual)
 
-            # 3. FORMULARIO DE CARGA (Con campos grandes y cómodos)
-            layout_formulario = BoxLayout(orientation='vertical', spacing=dp(8), size_hint_y=None)
-            layout_formulario.bind(minimum_height=layout_formulario.setter('height'))
-
-            layout_formulario.add_widget(Label(text="Código de Barras:", size_hint_y=None, height=dp(25), font_size='16sp', halign='left'))
-            self.input_codigo = TextInput(text="", multiline=False, size_hint_y=None, height=dp(50), font_size='18sp')
-            self.input_codigo.bind(on_text_validate=self.buscar_producto)
-            layout_formulario.add_widget(self.input_codigo)
-
-            layout_formulario.add_widget(Label(text="Nombre del Producto:", size_hint_y=None, height=dp(25), font_size='16sp'))
-            self.input_nombre = TextInput(multiline=False, size_hint_y=None, height=dp(50), font_size='18sp')
+            # Campo Nombre / Armazón
+            layout_formulario.add_widget(Label(text="Nombre / Modelo del Armazón:", size_hint_y=None, height=dp(25), font_size='16sp', bold=True))
+            self.input_nombre = TextInput(multiline=False, size_hint_y=None, height=dp(55), font_size='18sp')
             layout_formulario.add_widget(self.input_nombre)
 
-            layout_formulario.add_widget(Label(text="Precio ($):", size_hint_y=None, height=dp(25), font_size='16sp'))
-            self.input_precio = TextInput(multiline=False, size_hint_y=None, height=dp(50), font_size='18sp')
+            # Campo Precio
+            layout_formulario.add_widget(Label(text="Precio ($):", size_hint_y=None, height=dp(25), font_size='16sp', bold=True))
+            self.input_precio = TextInput(multiline=False, size_hint_y=None, height=dp(55), font_size='18sp', input_type='number')
             layout_formulario.add_widget(self.input_precio)
 
             layout_principal.add_widget(layout_formulario)
 
-            # 4. BARRA DE ESTADO (Dinámica)
+            # BARRA DE ESTADO (Notificaciones en amarillo)
             self.lbl_estado = Label(
-                text="Escriba un código o encienda la cámara.", 
+                text="Listo para operar. Ingrese un código.", 
                 size_hint_y=None, 
                 height=dp(40), 
                 color=(1, 1, 0, 1), 
@@ -98,10 +100,10 @@ class MiAppEscanner(App):
             )
             layout_principal.add_widget(self.lbl_estado)
 
-            # ESPACIADOR FLOTANTE: Empuja la botonera hacia el fondo de la pantalla de forma armónica
+            # ESTE WIDGET EMPUJA TODO PARA ARRIBA Y DEJA LOS BOTONES ABAJO DE TODO
             layout_principal.add_widget(Widget())
 
-            # 5. BOTONERA INFERIOR (Fija abajo de todo, botones gigantes)
+            # BOTONERA INFERIOR (GIGANTE PARA EL DEDO)
             layout_botones = BoxLayout(orientation='horizontal', size_hint_y=None, height=dp(65), spacing=dp(15))
             
             self.boton_guardar = Button(text="GUARDAR", font_size='18sp', bold=True, background_color=(0.1, 0.5, 0.8, 1))
@@ -125,17 +127,6 @@ class MiAppEscanner(App):
             layout_error.add_widget(scroll)
             return layout_error
 
-    def alternar_camara(self, instance):
-        try:
-            if self.visor_camara.play:
-                self.visor_camara.play = False
-                self.lbl_estado.text = "Cámara apagada."
-            else:
-                self.visor_camara.play = True
-                self.lbl_estado.text = "Cámara encendida. Apunte al código."
-        except Exception as error_cam:
-            self.lbl_estado.text = "El celular no permite iniciar el visor integrado."
-
     def buscar_producto(self, instance):
         codigo = self.input_codigo.text.strip()
         if not codigo:
@@ -147,7 +138,7 @@ class MiAppEscanner(App):
             nombre, precio = resultado
             self.input_nombre.text = nombre
             self.input_precio.text = str(precio)
-            self.lbl_estado.text = "Producto encontrado."
+            self.lbl_estado.text = f"Producto {codigo} encontrado."
         else:
             self.input_nombre.text = ""
             self.input_precio.text = ""
@@ -169,19 +160,19 @@ class MiAppEscanner(App):
 
         self.cursor.execute("INSERT OR REPLACE INTO productos VALUES (?, ?, ?)", (codigo, nombre, precio))
         self.conexion.commit()
-        self.lbl_estado.text = f"¡Código {codigo} guardado!"
+        self.lbl_estado.text = f"¡Armazón {codigo} guardado con éxito!"
 
     def generar_pdf(self, instance):
         try:
             if FPDF is None:
-                self.lbl_estado.text = "Error: Librería FPDF no disponible."
+                self.lbl_estado.text = "Error: Librería PDF no disponible."
                 return
 
             self.cursor.execute("SELECT codigo, nombre, precio FROM productos ORDER BY nombre ASC")
             todos_los_productos = self.cursor.fetchall()
 
             if not todos_los_productos:
-                self.lbl_estado.text = "No hay productos para exportar."
+                self.lbl_estado.text = "No hay productos cargados para exportar."
                 return
 
             ruta_pdf = os.path.join(self.user_data_dir, "Lista_de_Precios.pdf")
@@ -197,7 +188,7 @@ class MiAppEscanner(App):
             pdf.set_text_color(255, 255, 255)
             
             pdf.cell(40, 10, text="CÓDIGO", border=1, align="C", fill=True)
-            pdf.cell(100, 10, text="DESCRIPCIÓN DEL PRODUCTO", border=1, align="L", fill=True)
+            pdf.cell(100, 10, text="DESCRIPCIÓN DEL ARMAZÓN", border=1, align="L", fill=True)
             pdf.cell(40, 10, text="PRECIO", border=1, align="R", fill=True)
             pdf.ln(10)
 
